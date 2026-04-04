@@ -1,0 +1,8 @@
+/* App-level styles.
+   Component-specific styles go here.
+   Global styles and Tailwind directives are in index.css */
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
