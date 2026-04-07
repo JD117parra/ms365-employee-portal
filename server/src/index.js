@@ -4,6 +4,7 @@ const express = require('express')
 const cors = require('cors')
 const helmet = require('helmet')
 const morgan = require('morgan')
+const rateLimit = require('express-rate-limit')
 
 const graphRoutes = require('./routes/graphRoutes')
 
@@ -25,6 +26,15 @@ app.use(express.urlencoded({ extended: true }))
 
 // HTTP request logging
 app.use(morgan('dev'))
+
+// Rate limiting for API routes
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+app.use('/api/', apiLimiter)
 
 // Routes
 app.use('/api/graph', graphRoutes)
