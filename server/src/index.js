@@ -8,6 +8,14 @@ const rateLimit = require('express-rate-limit')
 
 const graphRoutes = require('./routes/graphRoutes')
 
+// Validate required environment variables
+const requiredEnvVars = ['TENANT_ID', 'CLIENT_ID', 'CLIENT_SECRET', 'CLIENT_URL']
+const missingVars = requiredEnvVars.filter((v) => !process.env[v])
+if (missingVars.length > 0) {
+  console.error(`Missing required environment variables: ${missingVars.join(', ')}`)
+  process.exit(1)
+}
+
 const app = express()
 const PORT = process.env.PORT || 5000
 
