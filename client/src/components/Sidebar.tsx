@@ -8,10 +8,14 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
+export type Page = 'dashboard' | 'directory' | 'settings'
+
 interface SidebarProps {
   displayName: string | null
   email: string | null
   photoUrl: string | null
+  currentPage: Page
+  onNavigate: (page: Page) => void
   onSignOut: () => void
 }
 
@@ -21,7 +25,13 @@ function getInitialTheme(): 'dark' | 'light' {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
-export default function Sidebar({ displayName, email, photoUrl, onSignOut }: SidebarProps) {
+const navItems: { page: Page; label: string; icon: typeof LayoutDashboard }[] = [
+  { page: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { page: 'directory', label: 'Directory', icon: FolderOpen },
+  { page: 'settings', label: 'Settings', icon: Settings },
+]
+
+export default function Sidebar({ displayName, email, photoUrl, currentPage, onNavigate, onSignOut }: SidebarProps) {
   const [theme, setTheme] = useState<'dark' | 'light'>(getInitialTheme)
 
   useEffect(() => {
@@ -59,27 +69,20 @@ export default function Sidebar({ displayName, email, photoUrl, onSignOut }: Sid
 
       {/* Navigation */}
       <nav className="flex-1 px-3">
-        <a
-          href="#"
-          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium bg-accent text-accent-foreground"
-        >
-          <LayoutDashboard className="w-4 h-4" />
-          Dashboard
-        </a>
-        <a
-          href="#"
-          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-        >
-          <FolderOpen className="w-4 h-4" />
-          Directory
-        </a>
-        <a
-          href="#"
-          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-        >
-          <Settings className="w-4 h-4" />
-          Settings
-        </a>
+        {navItems.map(({ page, label, icon: Icon }) => (
+          <button
+            key={page}
+            onClick={() => onNavigate(page)}
+            className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm w-full transition-colors ${
+              currentPage === page
+                ? 'font-medium bg-accent text-accent-foreground'
+                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+            }`}
+          >
+            <Icon className="w-4 h-4" />
+            {label}
+          </button>
+        ))}
       </nav>
 
       {/* Bottom controls */}

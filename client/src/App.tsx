@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import { useIsAuthenticated, useMsal } from '@azure/msal-react'
-import Sidebar from './components/Sidebar'
+import Sidebar, { type Page } from './components/Sidebar'
 import ProfileCard from './components/ProfileCard'
 import EventsList from './components/EventsList'
+import Directory from './components/Directory'
+import SettingsPage from './components/SettingsPage'
 import { useGraphData } from './hooks/useGraphData'
 import './App.css'
 
@@ -9,9 +12,31 @@ const loginRequest = {
   scopes: ['User.Read', 'openid', 'profile'],
 }
 
-function Dashboard() {
+function DashboardPage({ profile, events }: ReturnType<typeof useGraphData>) {
+  return (
+    <main className="ml-64 h-screen flex flex-col p-6 overflow-hidden">
+      <h1 className="text-2xl font-semibold tracking-tight mb-4">Dashboard</h1>
+      <div className="grid grid-cols-2 gap-6 flex-1 min-h-0">
+        <ProfileCard
+          profile={profile.data}
+          loading={profile.loading}
+          error={profile.error}
+        />
+        <EventsList
+          events={events.data}
+          loading={events.loading}
+          error={events.error}
+        />
+      </div>
+    </main>
+  )
+}
+
+function AuthenticatedApp() {
   const { instance } = useMsal()
-  const { profile, photo, events } = useGraphData()
+  const [page, setPage] = useState<Page>('dashboard')
+  const graphData = useGraphData()
+  const { profile, photo } = graphData
 
   const handleLogout = () => {
     instance.logoutPopup().catch(console.error)
@@ -23,23 +48,13 @@ function Dashboard() {
         displayName={profile.data?.displayName ?? null}
         email={profile.data?.mail ?? profile.data?.userPrincipalName ?? null}
         photoUrl={photo.data}
+        currentPage={page}
+        onNavigate={setPage}
         onSignOut={handleLogout}
       />
-      <main className="ml-64 p-8">
-        <h1 className="text-2xl font-semibold tracking-tight mb-6">Dashboard</h1>
-        <div className="flex flex-col gap-6 max-w-3xl">
-          <ProfileCard
-            profile={profile.data}
-            loading={profile.loading}
-            error={profile.error}
-          />
-          <EventsList
-            events={events.data}
-            loading={events.loading}
-            error={events.error}
-          />
-        </div>
-      </main>
+      {page === 'dashboard' && <DashboardPage {...graphData} />}
+      {page === 'directory' && <Directory />}
+      {page === 'settings' && <SettingsPage />}
     </div>
   )
 }
@@ -70,7 +85,7 @@ function LoginScreen() {
 
 function App() {
   const isAuthenticated = useIsAuthenticated()
-  return isAuthenticated ? <Dashboard /> : <LoginScreen />
+  return isAuthenticated ? <AuthenticatedApp /> : <LoginScreen />
 }
 
 export default App

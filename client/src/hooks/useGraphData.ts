@@ -49,7 +49,7 @@ export function useGraphData() {
     if (accounts.length === 0) return null
     try {
       const response = await instance.acquireTokenSilent({
-        scopes: ['User.Read'],
+        scopes: [`api://${import.meta.env.VITE_CLIENT_ID}/access_as_user`],
         account: accounts[0],
       })
       return response.accessToken
@@ -84,8 +84,8 @@ export function useGraphData() {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (!res.ok) throw new Error(`${res.status}`)
-        const blob = await res.blob()
-        setPhoto({ data: URL.createObjectURL(blob), loading: false, error: null })
+        const data = await res.json()
+        setPhoto({ data: data.photo, loading: false, error: null })
       } catch {
         setPhoto({ data: null, loading: false, error: 'No photo available' })
       }
