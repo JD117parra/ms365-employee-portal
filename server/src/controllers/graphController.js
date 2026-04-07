@@ -2,6 +2,12 @@ const axios = require('axios')
 
 const GRAPH_BASE_URL = 'https://graph.microsoft.com/v1.0'
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function sanitizeKqlTerm(term) {
+  return term.replace(/["\\]/g, '')
+}
+
 /**
  * GET /api/graph/me
  * Returns the authenticated user's profile from Microsoft Graph.
@@ -83,7 +89,8 @@ async function getUsers(req, res, next) {
 
     if (search) {
       headers.ConsistencyLevel = 'eventual'
-      params.$search = `"displayName:${search}" OR "mail:${search}"`
+      const sanitized = sanitizeKqlTerm(search)
+      params.$search = `"displayName:${sanitized}" OR "mail:${sanitized}"`
       params.$orderby = undefined
       params.$count = true
     }
@@ -103,6 +110,9 @@ async function getUsers(req, res, next) {
  * Returns a specific user's full profile.
  */
 async function getUserById(req, res, next) {
+  if (!UUID_REGEX.test(req.params.id)) {
+    return res.status(400).json({ error: 'Invalid user ID format' })
+  }
   try {
     const response = await axios.get(`${GRAPH_BASE_URL}/users/${req.params.id}`, {
       headers: { Authorization: `Bearer ${req.graphToken}` },
@@ -121,6 +131,9 @@ async function getUserById(req, res, next) {
  * Returns a specific user's profile photo as a base64 data URL.
  */
 async function getUserPhoto(req, res, next) {
+  if (!UUID_REGEX.test(req.params.id)) {
+    return res.status(400).json({ error: 'Invalid user ID format' })
+  }
   try {
     const response = await axios.get(`${GRAPH_BASE_URL}/users/${req.params.id}/photo/$value`, {
       headers: { Authorization: `Bearer ${req.graphToken}` },
