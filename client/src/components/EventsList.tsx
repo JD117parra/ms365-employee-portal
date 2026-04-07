@@ -26,8 +26,8 @@ function formatTime(dateTime: string): string {
 
 export default function EventsList({ events, loading, error }: EventsListProps) {
   return (
-    <div className="rounded-lg border border-border bg-card text-card-foreground p-6">
-      <h2 className="text-base font-semibold mb-4">Upcoming Events</h2>
+    <div className="rounded-lg border border-border bg-card text-card-foreground p-6 flex flex-col overflow-hidden">
+      <h2 className="text-base font-semibold mb-4 shrink-0">Upcoming Events</h2>
 
       {loading && (
         <div className="flex items-center justify-center py-8">
@@ -47,7 +47,7 @@ export default function EventsList({ events, loading, error }: EventsListProps) 
       )}
 
       {!loading && !error && events && events.length > 0 && (
-        <ul className="divide-y divide-border">
+        <ul className="divide-y divide-border overflow-y-auto flex-1 min-h-0">
           {events.slice(0, 10).map((event) => (
             <li key={event.id} className="py-3 first:pt-0 last:pb-0">
               <div className="flex items-start gap-3">

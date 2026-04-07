@@ -3,6 +3,7 @@ import { useIsAuthenticated, useMsal } from '@azure/msal-react'
 import Sidebar, { type Page } from './components/Sidebar'
 import ProfileCard from './components/ProfileCard'
 import EventsList from './components/EventsList'
+import TasksList from './components/TasksList'
 import Directory from './components/Directory'
 import SettingsPage from './components/SettingsPage'
 import { useGraphData } from './hooks/useGraphData'
@@ -12,7 +13,7 @@ const loginRequest = {
   scopes: ['User.Read', 'openid', 'profile'],
 }
 
-function DashboardPage({ profile, events }: ReturnType<typeof useGraphData>) {
+function DashboardPage({ profile, events, tasks }: ReturnType<typeof useGraphData>) {
   return (
     <main className="ml-64 h-screen flex flex-col p-6 overflow-hidden">
       <h1 className="text-2xl font-semibold tracking-tight mb-4">Dashboard</h1>
@@ -26,6 +27,11 @@ function DashboardPage({ profile, events }: ReturnType<typeof useGraphData>) {
           events={events.data}
           loading={events.loading}
           error={events.error}
+        />
+        <TasksList
+          tasks={tasks.data}
+          loading={tasks.loading}
+          error={tasks.error}
         />
       </div>
     </main>

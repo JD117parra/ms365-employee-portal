@@ -20,6 +20,18 @@ export interface CalendarEvent {
   organizer?: { emailAddress?: { name?: string } }
 }
 
+export interface TodoTask {
+  id: string
+  title: string
+  status: string
+  importance: string
+  dueDateTime?: { dateTime: string; timeZone: string }
+  createdDateTime: string
+  source: 'todo' | 'planner'
+  listName?: string
+  percentComplete?: number
+}
+
 interface GraphDataState<T> {
   data: T | null
   loading: boolean
@@ -40,6 +52,11 @@ export function useGraphData() {
     error: null,
   })
   const [events, setEvents] = useState<GraphDataState<CalendarEvent[]>>({
+    data: null,
+    loading: true,
+    error: null,
+  })
+  const [tasks, setTasks] = useState<GraphDataState<TodoTask[]>>({
     data: null,
     loading: true,
     error: null,
@@ -106,10 +123,26 @@ export function useGraphData() {
       }
     }
 
+    const fetchTasks = async () => {
+      try {
+        const token = await getToken()
+        if (!token) throw new Error('No token')
+        const res = await fetch('/api/graph/me/tasks', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!res.ok) throw new Error(`${res.status}`)
+        const data = await res.json()
+        setTasks({ data: data.value ?? data, loading: false, error: null })
+      } catch {
+        setTasks({ data: null, loading: false, error: 'Failed to load tasks' })
+      }
+    }
+
     fetchProfile()
     fetchPhoto()
     fetchEvents()
+    fetchTasks()
   }, [accounts, getToken])
 
-  return { profile, photo, events }
+  return { profile, photo, events, tasks }
 }
