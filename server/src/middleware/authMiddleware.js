@@ -37,7 +37,7 @@ async function acquireGraphToken(req, res, next) {
     next()
   } catch (error) {
     console.error('OBO token acquisition failed:', error.message)
-    return res.status(401).json({ error: 'Token acquisition failed', details: error.message })
+    return res.status(401).json({ error: 'Token acquisition failed' })
   }
 }
 
