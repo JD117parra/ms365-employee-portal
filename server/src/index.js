@@ -20,7 +20,21 @@ const app = express()
 const PORT = process.env.PORT || 5000
 
 // Security middleware
-app.use(helmet())
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        'frame-src': ["'self'", 'https://login.microsoftonline.com'],
+        'connect-src': [
+          "'self'",
+          'https://login.microsoftonline.com',
+          'https://graph.microsoft.com',
+        ],
+      },
+    },
+  })
+)
 
 // CORS — allow requests from the Vite dev server
 app.use(cors({
