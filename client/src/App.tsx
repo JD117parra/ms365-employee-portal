@@ -46,7 +46,7 @@ function AuthenticatedApp() {
   const { profile, photo } = graphData
 
   const handleLogout = () => {
-    instance.logoutPopup().catch(console.error)
+    instance.logoutRedirect().catch(console.error)
   }
 
   return (
@@ -70,7 +70,7 @@ function LoginScreen() {
   const { instance } = useMsal()
 
   const handleLogin = () => {
-    instance.loginPopup(loginRequest).catch(console.error)
+    instance.loginRedirect(loginRequest).catch(console.error)
   }
 
   return (

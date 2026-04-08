@@ -21,7 +21,10 @@ const msalConfig = {
 // MSAL v5 requires async initialization before rendering
 const msalInstance = new PublicClientApplication(msalConfig)
 
-msalInstance.initialize().then(() => {
+msalInstance.initialize().then(async () => {
+  // Process any pending redirect auth response (e.g. after loginRedirect completes).
+  await msalInstance.handleRedirectPromise()
+
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <ErrorBoundary>
