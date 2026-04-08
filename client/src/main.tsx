@@ -28,4 +28,10 @@ msalInstance.initialize().then(() => {
       </MsalProvider>
     </StrictMode>,
   )
+}).catch((error: unknown) => {
+  console.error('MSAL initialization failed:', error)
+  document.getElementById('root')!.innerHTML =
+    '<div style="display:flex;height:100vh;align-items:center;justify-content:center;font-family:sans-serif;color:#ef4444">' +
+    '<p>Authentication service failed to load. Please refresh the page.</p>' +
+    '</div>'
 })

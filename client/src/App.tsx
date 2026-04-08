@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useIsAuthenticated, useMsal } from '@azure/msal-react'
+import { MSAL_SCOPES } from './lib/constants'
 import Sidebar, { type Page } from './components/Sidebar'
 import ProfileCard from './components/ProfileCard'
 import EventsList from './components/EventsList'
@@ -10,7 +11,7 @@ import { useGraphData } from './hooks/useGraphData'
 import './App.css'
 
 const loginRequest = {
-  scopes: ['User.Read', 'openid', 'profile'],
+  scopes: MSAL_SCOPES.LOGIN,
 }
 
 function DashboardPage({ profile, events, tasks }: ReturnType<typeof useGraphData>) {

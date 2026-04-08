@@ -24,7 +24,11 @@ async function acquireGraphToken(req, res, next) {
     return res.status(401).json({ error: 'Missing or invalid Authorization header' })
   }
 
-  const userToken = authHeader.split(' ')[1]
+  const parts = authHeader.split(' ')
+  if (parts.length !== 2 || parts[0] !== 'Bearer') {
+    return res.status(401).json({ error: 'Malformed Authorization header' })
+  }
+  const userToken = parts[1]
 
   try {
     const oboRequest = {
@@ -36,7 +40,8 @@ async function acquireGraphToken(req, res, next) {
     req.graphToken = tokenResponse.accessToken
     next()
   } catch (error) {
-    console.error('OBO token acquisition failed:', error.message)
+    // Log only the error code to avoid leaking token details in logs
+    console.error('OBO token acquisition failed — code:', error.errorCode ?? 'unknown')
     return res.status(401).json({ error: 'Token acquisition failed' })
   }
 }

@@ -3,7 +3,7 @@ import { Monitor, User, Info } from 'lucide-react'
 
 export default function SettingsPage() {
   const { accounts } = useMsal()
-  const account = accounts[0]
+  const account = accounts.length > 0 ? accounts[0] : null
 
   return (
     <div className="h-screen flex flex-col ml-64 p-6 overflow-hidden">

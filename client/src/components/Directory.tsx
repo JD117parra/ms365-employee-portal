@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useMsal } from '@azure/msal-react'
 import { Search, Loader2, Users, Building2, Mail, X } from 'lucide-react'
+import { MSAL_SCOPES } from '../lib/constants'
 
 interface DirectoryUser {
   id: string
@@ -30,7 +31,7 @@ export default function Directory() {
     if (accounts.length === 0) return null
     try {
       const response = await instance.acquireTokenSilent({
-        scopes: [`api://${import.meta.env.VITE_CLIENT_ID}/access_as_user`],
+        scopes: MSAL_SCOPES.API,
         account: accounts[0],
       })
       return response.accessToken

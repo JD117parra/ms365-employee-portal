@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useMsal } from '@azure/msal-react'
+import { MSAL_SCOPES } from '../lib/constants'
 
 export interface UserProfile {
   displayName: string | null
@@ -66,7 +67,7 @@ export function useGraphData() {
     if (accounts.length === 0) return null
     try {
       const response = await instance.acquireTokenSilent({
-        scopes: [`api://${import.meta.env.VITE_CLIENT_ID}/access_as_user`],
+        scopes: MSAL_SCOPES.API,
         account: accounts[0],
       })
       return response.accessToken
