@@ -161,9 +161,10 @@ async function fetchTodoTasks(graphToken) {
   })
 
   const lists = listsResponse.data.value || []
-  const allTasks = []
 
-  for (const list of lists) {
+  // Fire all list-task requests in parallel instead of sequentially.
+  // With N lists this reduces wall time from O(N) serial to O(1) concurrent.
+  const listTaskPromises = lists.map(async (list) => {
     try {
       const tasksResponse = await axios.get(
         `${GRAPH_BASE_URL}/me/todo/lists/${list.id}/tasks`,
@@ -177,7 +178,7 @@ async function fetchTodoTasks(graphToken) {
           },
         }
       )
-      const tasks = (tasksResponse.data.value || []).map((task) => ({
+      return (tasksResponse.data.value || []).map((task) => ({
         id: task.id,
         title: task.title,
         status: task.status,
@@ -187,12 +188,13 @@ async function fetchTodoTasks(graphToken) {
         source: 'todo',
         listName: list.displayName,
       }))
-      allTasks.push(...tasks)
     } catch {
-      // Skip lists that fail
+      return [] // Skip lists that fail without blocking the others
     }
-  }
-  return allTasks
+  })
+
+  const results = await Promise.all(listTaskPromises)
+  return results.flat()
 }
 
 /**

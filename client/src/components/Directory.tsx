@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useMsal } from '@azure/msal-react'
 import { Search, Loader2, Users, Building2, Mail, X } from 'lucide-react'
+import { MSAL_SCOPES } from '../lib/constants'
 
 interface DirectoryUser {
   id: string
@@ -26,18 +27,22 @@ export default function Directory() {
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
 
+  const accountRef = useRef(accounts[0])
+  useEffect(() => { accountRef.current = accounts[0] }, [accounts])
+
   const getToken = useCallback(async () => {
-    if (accounts.length === 0) return null
+    const account = accountRef.current
+    if (!account) return null
     try {
       const response = await instance.acquireTokenSilent({
-        scopes: [`api://${import.meta.env.VITE_CLIENT_ID}/access_as_user`],
-        account: accounts[0],
+        scopes: MSAL_SCOPES.API,
+        account,
       })
       return response.accessToken
     } catch {
       return null
     }
-  }, [instance, accounts])
+  }, [instance])
 
   const fetchUsers = useCallback(async (query?: string) => {
     setLoading(true)
@@ -61,9 +66,20 @@ export default function Directory() {
     }
   }, [getToken])
 
+  const isFirstRender = useRef(true)
+
   useEffect(() => {
-    fetchUsers()
-  }, [fetchUsers])
+    // Fetch immediately on mount, then debounce subsequent search changes
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      fetchUsers()
+      return
+    }
+    const timer = setTimeout(() => {
+      fetchUsers(search || undefined)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [search, fetchUsers])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -72,7 +88,7 @@ export default function Directory() {
 
   const handleClearSearch = () => {
     setSearch('')
-    fetchUsers()
+    // search state change triggers the debounced effect above
   }
 
   const handleSelectUser = async (userId: string) => {

@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useMsal } from '@azure/msal-react'
+import { MSAL_SCOPES } from '../lib/constants'
 
 export interface UserProfile {
   displayName: string | null
@@ -62,21 +63,31 @@ export function useGraphData() {
     error: null,
   })
 
+  // Store the account in a ref so getToken never changes reference,
+  // avoiding infinite re-fetches when useMsal returns a new accounts array.
+  const accountRef = useRef(accounts[0])
+  useEffect(() => { accountRef.current = accounts[0] }, [accounts])
+
   const getToken = useCallback(async () => {
-    if (accounts.length === 0) return null
+    const account = accountRef.current
+    if (!account) return null
     try {
       const response = await instance.acquireTokenSilent({
-        scopes: [`api://${import.meta.env.VITE_CLIENT_ID}/access_as_user`],
-        account: accounts[0],
+        scopes: MSAL_SCOPES.API,
+        account,
       })
       return response.accessToken
     } catch {
       return null
     }
-  }, [instance, accounts])
+  }, [instance])
+
+  // Use a stable primitive (homeAccountId) as the effect trigger
+  // so data is fetched once after login, not on every render.
+  const accountId = accounts[0]?.homeAccountId ?? null
 
   useEffect(() => {
-    if (accounts.length === 0) return
+    if (!accountId) return
 
     const fetchProfile = async () => {
       try {
@@ -142,7 +153,7 @@ export function useGraphData() {
     fetchPhoto()
     fetchEvents()
     fetchTasks()
-  }, [accounts, getToken])
+  }, [accountId, getToken])
 
   return { profile, photo, events, tasks }
 }
