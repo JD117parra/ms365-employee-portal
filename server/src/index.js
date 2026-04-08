@@ -4,14 +4,37 @@ const express = require('express')
 const cors = require('cors')
 const helmet = require('helmet')
 const morgan = require('morgan')
+const rateLimit = require('express-rate-limit')
 
 const graphRoutes = require('./routes/graphRoutes')
+
+// Validate required environment variables
+const requiredEnvVars = ['TENANT_ID', 'CLIENT_ID', 'CLIENT_SECRET', 'CLIENT_URL']
+const missingVars = requiredEnvVars.filter((v) => !process.env[v])
+if (missingVars.length > 0) {
+  console.error(`Missing required environment variables: ${missingVars.join(', ')}`)
+  process.exit(1)
+}
 
 const app = express()
 const PORT = process.env.PORT || 5000
 
 // Security middleware
-app.use(helmet())
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        'frame-src': ["'self'", 'https://login.microsoftonline.com'],
+        'connect-src': [
+          "'self'",
+          'https://login.microsoftonline.com',
+          'https://graph.microsoft.com',
+        ],
+      },
+    },
+  })
+)
 
 // CORS — allow requests from the Vite dev server
 app.use(cors({
@@ -24,7 +47,17 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
 // HTTP request logging
-app.use(morgan('dev'))
+const morganFormat = process.env.NODE_ENV === 'production' ? 'combined' : 'dev'
+app.use(morgan(morganFormat))
+
+// Rate limiting for API routes
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+app.use('/api/', apiLimiter)
 
 // Routes
 app.use('/api/graph', graphRoutes)
@@ -43,7 +76,7 @@ app.use((_req, res) => {
 app.use((err, _req, res, _next) => {
   console.error(err.stack)
   res.status(err.status || 500).json({
-    error: err.message || 'Internal Server Error',
+    error: 'An unexpected error occurred',
   })
 })
 

@@ -1,6 +1,6 @@
 const { Router } = require('express')
 const { acquireGraphToken } = require('../middleware/authMiddleware')
-const { getMe, getMyPhoto, getMyEvents } = require('../controllers/graphController')
+const { getMe, getMyPhoto, getMyEvents, getMyTasks, getUsers, getUserById, getUserPhoto } = require('../controllers/graphController')
 
 const router = Router()
 
@@ -10,5 +10,9 @@ router.use(acquireGraphToken)
 router.get('/me', getMe)
 router.get('/me/photo', getMyPhoto)
 router.get('/me/events', getMyEvents)
+router.get('/me/tasks', getMyTasks)
+router.get('/users', getUsers)
+router.get('/users/:id', getUserById)
+router.get('/users/:id/photo', getUserPhoto)
 
 module.exports = router

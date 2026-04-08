@@ -2,33 +2,51 @@
 
 A full-stack employee portal that integrates with **Microsoft 365** using
 **Microsoft Entra ID (Azure AD)** for authentication and the **Microsoft Graph API**
-to surface organizational data — including user profiles, calendar events, emails,
-Teams activity, and department directory listings.
+to surface organizational data — including user profiles, calendar events,
+tasks (To Do & Planner), and department directory listings.
+
+---
+
+## Features
+
+- **Dashboard** — At-a-glance view of your profile, upcoming events, and pending tasks
+- **Profile Card** — Displays your MS365 profile info and photo
+- **Calendar Events** — Next 10 upcoming events from Outlook calendar
+- **My Tasks** — Unified view of incomplete tasks from Microsoft To Do and Planner, with source badges, due dates, importance levels, and progress bars
+- **Directory** — Browse and search all users in your tenant with detail panel
+- **Settings** — Session info and app details
+- **Dark/Light Theme** — Toggle via sidebar
 
 ---
 
 ## Tech Stack
 
-| Layer        | Technology                                       |
-|--------------|--------------------------------------------------|
-| Frontend     | React 19 + Vite 6 + TypeScript                   |
-| Styling      | Tailwind CSS + shadcn/ui                         |
+| Layer        | Technology                                           |
+|--------------|------------------------------------------------------|
+| Frontend     | React 19 + Vite 6 + TypeScript                      |
+| Styling      | Tailwind CSS + shadcn/ui + Radix UI                  |
 | Auth (FE)    | MSAL.js (`@azure/msal-browser`, `@azure/msal-react`) |
-| Backend      | Node.js 22 + Express 5                           |
-| Auth (BE)    | `@azure/msal-node`                               |
-| API          | Microsoft Graph API v1.0                         |
+| Backend      | Node.js 18+ + Express 4                              |
+| Auth (BE)    | `@azure/msal-node` (On-Behalf-Of flow)               |
+| API          | Microsoft Graph API v1.0                              |
 
 ---
 
 ## Prerequisites
 
-- **Node.js 18 or higher** (v22 recommended) — [nodejs.org](https://nodejs.org)
+- **Node.js 18 or higher** — [nodejs.org](https://nodejs.org)
 - **npm 9 or higher** (included with Node.js)
 - **Microsoft 365 Developer account** — [developer.microsoft.com/microsoft-365](https://developer.microsoft.com/en-us/microsoft-365/dev-program)
 - An **Azure App Registration** in your Microsoft Entra ID tenant with:
   - Redirect URI set to `http://localhost:5173` (SPA type)
-  - API permissions: `User.Read`, `Calendars.Read`, `Mail.Read`, `offline_access`
-  - A client secret created for server-side calls
+  - An **Expose an API** scope: `api://<CLIENT_ID>/access_as_user`
+  - API permissions (Delegated):
+    - `User.Read` — User profile and photo
+    - `Calendars.Read` — Calendar events
+    - `Tasks.Read` — Microsoft To Do tasks
+    - `Group.Read.All` — Planner tasks
+  - A client secret created for server-side OBO calls
+  - Admin consent granted for the above permissions
 
 ---
 
@@ -37,7 +55,7 @@ Teams activity, and department directory listings.
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-org/ms365-employee-portal.git
+git clone https://github.com/JD117parra/ms365-employee-portal.git
 cd ms365-employee-portal
 ```
 
@@ -49,21 +67,19 @@ cp .env.example .env
 
 Open `.env` and fill in your Azure App Registration values (see [Environment Variables](#environment-variables) below).
 
-### 3. Install client dependencies
+### 3. Install dependencies
 
 ```bash
+# Client
 cd client
 npm install
-```
 
-### 4. Install server dependencies
-
-```bash
+# Server
 cd ../server
 npm install
 ```
 
-### 5. Start the development servers
+### 4. Start the development servers
 
 ```bash
 # Terminal 1 — Express backend
@@ -85,17 +101,33 @@ npm run dev
 
 Copy `.env.example` to `.env` at the project root and populate each variable:
 
-| Variable         | Description                                                                      |
-|------------------|----------------------------------------------------------------------------------|
-| `TENANT_ID`      | Your Microsoft Entra ID tenant ID (Azure Portal > Overview)                     |
-| `CLIENT_ID`      | Application (client) ID from your Azure App Registration                        |
-| `CLIENT_SECRET`  | Client secret from Azure Portal > App Registrations > Certificates & Secrets    |
-| `PORT`           | Port for the Express server (default: `5000`)                                   |
-| `CLIENT_URL`     | Vite dev server URL for CORS (default: `http://localhost:5173`)                 |
-| `VITE_TENANT_ID` | Same as `TENANT_ID` — exposed to the browser bundle by Vite                    |
-| `VITE_CLIENT_ID` | Same as `CLIENT_ID` — exposed to the browser bundle by Vite                    |
+| Variable         | Description                                                                   |
+|------------------|-------------------------------------------------------------------------------|
+| `TENANT_ID`      | Your Microsoft Entra ID tenant ID                                            |
+| `CLIENT_ID`      | Application (client) ID from your Azure App Registration                     |
+| `CLIENT_SECRET`  | Client secret from Certificates & Secrets                                    |
+| `PORT`           | Port for the Express server (default: `5000`)                                |
+| `CLIENT_URL`     | Vite dev server URL for CORS (default: `http://localhost:5173`)              |
+| `VITE_TENANT_ID` | Same as `TENANT_ID` — exposed to the browser bundle by Vite                 |
+| `VITE_CLIENT_ID` | Same as `CLIENT_ID` — exposed to the browser bundle by Vite                 |
 
 > **Security note:** Never commit `.env` to version control. It is listed in `.gitignore`.
+
+---
+
+## API Endpoints
+
+All endpoints require a valid Bearer token and are prefixed with `/api/graph`.
+
+| Method | Endpoint              | Description                                  |
+|--------|-----------------------|----------------------------------------------|
+| GET    | `/me`                 | Authenticated user's profile                 |
+| GET    | `/me/photo`           | User's profile photo (base64)                |
+| GET    | `/me/events`          | Upcoming calendar events (top 10)            |
+| GET    | `/me/tasks`           | Pending tasks from To Do + Planner           |
+| GET    | `/users`              | List tenant users (top 50, supports `?search=`) |
+| GET    | `/users/:id`          | Specific user's profile                      |
+| GET    | `/users/:id/photo`    | Specific user's photo (base64)               |
 
 ---
 
@@ -103,32 +135,38 @@ Copy `.env.example` to `.env` at the project root and populate each variable:
 
 ```
 ms365-employee-portal/
-├── client/                      React + Vite frontend
+├── client/                          React + Vite frontend
 │   ├── src/
-│   │   ├── main.tsx             Entry point — MSAL provider setup
-│   │   ├── App.tsx              Root application component
-│   │   ├── index.css            Global styles + shadcn/ui CSS variables
-│   │   └── vite-env.d.ts        Vite + custom env variable types
-│   ├── index.html               HTML entry point
-│   ├── vite.config.ts           Vite config — @ alias + API proxy
-│   ├── tailwind.config.js       Tailwind CSS + shadcn/ui theme tokens
-│   ├── tsconfig.json            TypeScript project references
-│   ├── tsconfig.app.json        Browser app TypeScript config
-│   └── tsconfig.node.json       Vite config TypeScript config
+│   │   ├── main.tsx                 Entry point — MSAL provider setup
+│   │   ├── App.tsx                  Root component + page routing
+│   │   ├── index.css                Global styles + CSS variables
+│   │   ├── components/
+│   │   │   ├── Sidebar.tsx          Navigation + user info + theme toggle
+│   │   │   ├── ProfileCard.tsx      User profile display
+│   │   │   ├── EventsList.tsx       Upcoming calendar events
+│   │   │   ├── TasksList.tsx        To Do + Planner tasks
+│   │   │   ├── Directory.tsx        User directory with search
+│   │   │   └── SettingsPage.tsx     Session and app settings
+│   │   └── hooks/
+│   │       └── useGraphData.ts      Graph API data fetching hook
+│   ├── index.html
+│   ├── vite.config.ts               Vite config — API proxy + aliases
+│   ├── tailwind.config.js           Tailwind + shadcn/ui theme
+│   └── tsconfig*.json               TypeScript configs
 │
-├── server/                      Node.js + Express backend
+├── server/                          Node.js + Express backend
 │   └── src/
-│       ├── index.js             Server entry point
+│       ├── index.js                 Server entry — security + CORS + rate limiting
 │       ├── routes/
-│       │   └── graphRoutes.js   Microsoft Graph API route definitions
+│       │   └── graphRoutes.js       Graph API route definitions
 │       ├── controllers/
-│       │   └── graphController.js  Graph API request handlers
+│       │   └── graphController.js   Graph API request handlers
 │       └── middleware/
-│           └── authMiddleware.js   MSAL OBO token acquisition
+│           └── authMiddleware.js    MSAL On-Behalf-Of token acquisition
 │
-├── .env.example                 Environment variable template
-├── .gitignore                   Git ignore rules
-└── README.md                    This file
+├── .env.example                     Environment variable template
+├── .gitignore
+└── README.md
 ```
 
 ---
@@ -136,21 +174,3 @@ ms365-employee-portal/
 ## License
 
 MIT License — Copyright (c) 2026
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is furnished
-to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
